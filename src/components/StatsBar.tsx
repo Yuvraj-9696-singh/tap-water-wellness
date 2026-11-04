@@ -1,18 +1,14 @@
 import { motion } from "framer-motion";
 import { Droplets, CheckCircle2, AlertTriangle, XCircle, Activity } from "lucide-react";
-import { demoTaps } from "@/components/Data/demoData";
+import { useWaterData } from "@/context/WaterDataContext";
 
 const StatsBar = () => {
-  const total = demoTaps.length;
-  const safe = demoTaps.filter((t) => t.status === "safe").length;
-  const warning = demoTaps.filter((t) => t.status === "warning").length;
-  const danger = demoTaps.filter((t) => t.status === "danger").length;
-  const avgWqi = Math.round(demoTaps.reduce((s, t) => s + t.wqi, 0) / total);
+  const { stats } = useWaterData();
 
-  const stats = [
+  const statItems = [
     {
       icon: Droplets,
-      value: total,
+      value: stats.total,
       label: "Total Taps",
       color: "text-primary",
       bg: "bg-primary/10",
@@ -20,7 +16,7 @@ const StatsBar = () => {
     },
     {
       icon: CheckCircle2,
-      value: safe,
+      value: stats.safe,
       label: "Safe",
       color: "text-success",
       bg: "bg-success/10",
@@ -28,7 +24,7 @@ const StatsBar = () => {
     },
     {
       icon: AlertTriangle,
-      value: warning,
+      value: stats.warning,
       label: "Warning",
       color: "text-warning",
       bg: "bg-warning/10",
@@ -36,7 +32,7 @@ const StatsBar = () => {
     },
     {
       icon: XCircle,
-      value: danger,
+      value: stats.danger,
       label: "Critical",
       color: "text-destructive",
       bg: "bg-destructive/10",
@@ -44,7 +40,7 @@ const StatsBar = () => {
     },
     {
       icon: Activity,
-      value: avgWqi,
+      value: stats.avgWqi,
       label: "Avg WQI",
       color: "text-primary",
       bg: "bg-primary/10",
@@ -54,13 +50,14 @@ const StatsBar = () => {
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
-      {stats.map((stat, i) => (
+      {statItems.map((stat, i) => (
         <motion.div
           key={stat.label}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.08 }}
           className="glass-card rounded-2xl p-4 flex flex-col items-center gap-2 hover:scale-105 transition-transform duration-300"
+          aria-label={`${stat.label}: ${stat.value}`}
         >
           <div className={`p-2 rounded-xl ${stat.bg} ${stat.glow}`}>
             <stat.icon className={`h-5 w-5 ${stat.color}`} />

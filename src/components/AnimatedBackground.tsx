@@ -143,7 +143,9 @@ const AnimatedBackground = () => {
       }
 
       time++;
-      animationId = requestAnimationFrame(animate);
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        animationId = requestAnimationFrame(animate);
+      }
     };
 
     animate();

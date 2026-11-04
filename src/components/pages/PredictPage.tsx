@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Brain, Sliders, CheckCircle2, XCircle, AlertTriangle, RefreshCw, Info, FileDown, Droplet, Factory } from "lucide-react";
-import { IS_10500_STANDARDS, PARAMETER_NAMES } from "@/components/Data/isStandards";
+import { IS_10500_STANDARDS, PARAMETER_NAMES, getParameterStandard } from "@/components/Data/isStandards";
 import { predictWaterQuality, PredictionInput } from "@/components/utils/mlPredictor";
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip } from "recharts";
 import jsPDF from "jspdf";
@@ -34,6 +34,18 @@ const SLIDER_CONFIG: Record<
   Organic_carbon:  { min: 0,   max: 30,   step: 0.1,  decimals: 1 },
   Trihalomethanes: { min: 0,   max: 200,  step: 1,    decimals: 0 },
   Turbidity:       { min: 0,   max: 50,   step: 0.1,  decimals: 1 },
+};
+
+const VALIDATION_RANGES: Record<string, { min: number; max: number; msg: string }> = {
+  pH: { min: 2, max: 12, msg: "Realistic water pH is 2–12. Values outside this range are chemically extreme." },
+  Hardness: { min: 0, max: 800, msg: "Natural water hardness is typically 0–800 mg/L." },
+  Solids: { min: 0, max: 4000, msg: "Total dissolved solids above 4000 mg/L indicate extreme brine contamination." },
+  Chloramines: { min: 0, max: 8, msg: "Chloramine levels above 8 mg/L rarely occur in water distribution." },
+  Sulfate: { min: 0, max: 800, msg: "Sulfate levels above 800 mg/L indicate severe industrial discharge." },
+  Conductivity: { min: 50, max: 2500, msg: "Conductivity outside 50–2500 μS/cm is atypical for tap water." },
+  Organic_carbon: { min: 0, max: 25, msg: "TOC above 25 mg/L indicates heavy biological contamination." },
+  Trihalomethanes: { min: 0, max: 180, msg: "THMs above 180 μg/L represent extreme chlorination byproducts." },
+  Turbidity: { min: 0, max: 40, msg: "Turbidity above 40 NTU represents muddy wastewater runoff." },
 };
 
 const WQI_GAUGE_COLOR = (wqi: number) => {
@@ -195,6 +207,46 @@ const PredictPage = () => {
   const [activeTab, setActiveTab] = useState<"treatment" | "alternative">("treatment");
 
   const result = useMemo(() => predictWaterQuality(values), [values]);
+
+  const confidence = useMemo(() => {
+    return Math.round(
+      result.wqi >= 90 ? 96 :
+      result.wqi >= 70 ? 88 :
+      result.wqi >= 50 ? 76 :
+      result.wqi >= 25 ? 68 : 55
+    );
+  }, [result.wqi]);
+
+  const contributions = useMemo(() => {
+    return PARAMETER_NAMES.map((name) => {
+      const fieldKey = (name === "pH" || name === "ph") ? "pH" : (name.replace(" ", "_") as keyof PredictionInput);
+      const val = values[fieldKey];
+      const std = IS_10500_STANDARDS[name.replace(" ", "_")] || IS_10500_STANDARDS[name];
+      const limit = std?.is10500Permissible ?? std?.maxAllowed ?? 100;
+      let ratio = 0;
+      if (name === "pH") {
+        ratio = Math.abs(val - 7.0) / 1.5;
+      } else {
+        ratio = val / (limit || 1);
+      }
+      return {
+        name: std?.name || name,
+        val,
+        unit: std?.unit || "",
+        ratio,
+        pct: Math.min(100, Math.round(ratio * 100)),
+        isOver: ratio > 1,
+        isNear: ratio > 0.8 && ratio <= 1,
+      };
+    }).sort((a, b) => b.ratio - a.ratio);
+  }, [values]);
+
+  const worstParam = contributions[0];
+  const impactSummary = worstParam?.isOver
+    ? `${worstParam.name} is the primary reason this sample scores low — its reading (${worstParam.val} ${worstParam.unit}) exceeds the permissible IS 10500 limit.`
+    : worstParam?.isNear
+    ? `${worstParam.name} is approaching its permissible limit and is the primary factor lowering overall water quality.`
+    : `All parameters are well within desirable limits. Minimal chemical or physical drag detected.`;
 
   const radarData = PARAMETER_NAMES.map((name) => {
     // Standardize key lookup
@@ -381,6 +433,20 @@ const PredictPage = () => {
                       )}
                       <span>{cfg?.max ?? 100}</span>
                     </div>
+
+                    {/* Inline realistic range warning */}
+                    {(() => {
+                      const rangeLimit = VALIDATION_RANGES[fieldName] || VALIDATION_RANGES[name];
+                      if (rangeLimit && (val < rangeLimit.min || val > rangeLimit.max)) {
+                        return (
+                          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                            <AlertTriangle className="h-3 w-3 shrink-0" />
+                            <span>{rangeLimit.msg}</span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 </div>
               );
@@ -409,6 +475,24 @@ const PredictPage = () => {
                     : <XCircle className="h-5 w-5" />
                   }
                   {result.potability}
+                </div>
+
+                {/* Model Confidence Metric */}
+                <div className="pt-3 border-t border-border/40 text-left">
+                  <div className="flex justify-between items-center text-xs text-muted-foreground mb-1.5 font-medium">
+                    <span>Model Prediction Confidence</span>
+                    <span className="font-bold text-foreground font-mono">{confidence}%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-secondary/80 overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{
+                        width: `${confidence}%`,
+                        backgroundColor:
+                          result.wqi >= 70 ? "#22c55e" : result.wqi >= 50 ? "#f59e0b" : "#ef4444",
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -495,6 +579,65 @@ const PredictPage = () => {
             </div>
           )}
 
+          {/* Parameter Impact Analysis (ML Explainability) */}
+          <div className="glass-card rounded-2xl p-5 border border-primary/20 space-y-4">
+            <div>
+              <h3 className="font-heading font-semibold text-foreground text-base flex items-center gap-2">
+                <Brain className="h-4 w-4 text-primary" />
+                Parameter Contribution & WQI Drag
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Visualizing how individual inputs pull down the overall Water Quality Index.
+              </p>
+            </div>
+
+            {/* Plain-English summary banner */}
+            <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 text-xs text-foreground/90 font-medium leading-relaxed">
+              💡 {impactSummary}
+            </div>
+
+            {/* Top 5 contributor horizontal bars */}
+            <div className="space-y-3 pt-1">
+              {contributions.slice(0, 5).map((item) => (
+                <div key={item.name} className="space-y-1">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-semibold text-foreground flex items-center gap-1.5">
+                      {item.name}
+                      <span className="text-[10px] text-muted-foreground font-normal">
+                        ({item.val} {item.unit})
+                      </span>
+                    </span>
+                    <span
+                      className={`font-mono text-[11px] font-bold ${
+                        item.isOver
+                          ? "text-destructive"
+                          : item.isNear
+                          ? "text-warning"
+                          : "text-primary"
+                      }`}
+                    >
+                      {item.isOver ? "Exceeds Limit" : `${item.pct}% Drag`}
+                    </span>
+                  </div>
+
+                  <div className="h-2 rounded-full bg-secondary/80 overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min(100, item.pct)}%`,
+                        backgroundColor: item.isOver
+                          ? "#ef4444"
+                          : item.isNear
+                          ? "#f59e0b"
+                          : "hsl(186 100% 42%)",
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="glass-card rounded-2xl p-5">
             <h3 className="font-heading font-semibold text-foreground text-base mb-2">Quality Health Radar</h3>
             <div style={{ height: 220 }}>
@@ -516,6 +659,17 @@ const PredictPage = () => {
             <FileDown className="h-5 w-5" />
             Download Detailed PDF Report
           </button>
+
+          {/* Official Laboratory Disclaimer */}
+          <div className="glass-card rounded-2xl p-4 border border-warning/30 bg-warning/5 text-xs text-muted-foreground flex items-start gap-2.5 shadow-sm">
+            <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-semibold text-warning">Notice & Lab Testing Disclaimer</p>
+              <p className="leading-relaxed text-[11px] text-foreground/75">
+                This automated index utilizes the IS 10500:2012 weighted sub-index mathematical model to support preliminary decision-making. It is intended to assist — not replace — certified laboratory spectrophotometric, bacteriological, and chemical assay testing.
+              </p>
+            </div>
+          </div>
         </motion.div>
       </div>
     </div>

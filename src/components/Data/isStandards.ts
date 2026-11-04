@@ -94,7 +94,7 @@ export const IS_10500_STANDARDS: Record<string, ParameterStandard> = {
   Conductivity: {
     name: "Conductivity",
     unit: "μS/cm",
-    is10500Permissible: 800,
+    is10500Permissible: 1000,
     is10500Desirable: 400,
     whoGuideline: 400,
     weight: 0.05,
