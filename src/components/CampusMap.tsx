@@ -14,23 +14,43 @@ const GPS_COORDS: Record<string, [number, number]> = {
   "tap-5": [25.2592, 82.9865], // Visvesvaraya Hostel, IIT BHU
 };
 
-type TileStyle = "dark" | "osm" | "positron";
+const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY;
 
-const TILE_LAYERS: Record<TileStyle, { url: string; attribution: string; name: string }> = {
-  dark: {
-    name: "CARTO Dark Matter (OSM)",
-    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+export type TileStyle = "dark-osm" | "osm" | "carto" | "maptiler";
+
+interface TileConfig {
+  name: string;
+  url: string;
+  attribution: string;
+  className?: string;
+  subdomains?: string[];
+}
+
+const TILE_LAYERS: Record<TileStyle, TileConfig> = {
+  "dark-osm": {
+    name: "OpenStreetMap Dark (CSS Filtered)",
+    url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
+    className: "dark-tiles",
   },
   osm: {
-    name: "OpenStreetMap Standard",
+    name: "OpenStreetMap Standard (Bright)",
     url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
   },
-  positron: {
-    name: "CARTO Positron (Clean Light)",
-    url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+  carto: {
+    name: "CARTO Dark Matter",
+    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+    subdomains: ["a", "b", "c", "d"],
+  },
+  maptiler: {
+    name: "MapTiler Dark",
+    url: MAPTILER_KEY
+      ? `https://api.maptiler.com/maps/dataviz-dark/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`
+      : "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution: '&copy; <a href="https://www.maptiler.com/copyright/" target="_blank" rel="noopener noreferrer">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
+    className: MAPTILER_KEY ? undefined : "dark-tiles",
   },
 };
 
@@ -40,7 +60,9 @@ export default function CampusMap() {
   const tileLayerRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [localSelectedTap, setLocalSelectedTap] = useState<EnhancedTapLocation | null>(null);
-  const [activeTileStyle, setActiveTileStyle] = useState<TileStyle>("dark");
+  const [activeTileStyle, setActiveTileStyle] = useState<TileStyle>(
+    MAPTILER_KEY ? "maptiler" : "dark-osm"
+  );
 
   // Initialize Leaflet Map
   useEffect(() => {
@@ -61,12 +83,14 @@ export default function CampusMap() {
 
       mapRef.current = map;
 
-      // Add default dark basemap (CARTO Dark Matter, powered by OpenStreetMap data)
-      const activeTile = TILE_LAYERS.dark;
+      // Add default basemap (OSM direct tiles with .dark-tiles filter or MapTiler if key provided)
+      const initialStyle: TileStyle = MAPTILER_KEY ? "maptiler" : "dark-osm";
+      const activeTile = TILE_LAYERS[initialStyle];
       tileLayerRef.current = L.tileLayer(activeTile.url, {
         attribution: activeTile.attribution,
         maxZoom: 19,
-        subdomains: ["a", "b", "c", "d"],
+        className: activeTile.className || "",
+        subdomains: activeTile.subdomains || ["a", "b", "c"],
       }).addTo(map);
 
       // Fit campus bounds with generous padding so all station pins are clearly visible
@@ -171,12 +195,17 @@ export default function CampusMap() {
       tileLayerRef.current = L.tileLayer(selected.url, {
         attribution: selected.attribution,
         maxZoom: 19,
-        subdomains: ["a", "b", "c"],
+        className: selected.className || "",
+        subdomains: selected.subdomains || ["a", "b", "c"],
       }).addTo(mapRef.current);
     });
   };
 
   const activeTap = localSelectedTap;
+
+  const availableStyles: TileStyle[] = MAPTILER_KEY
+    ? ["maptiler", "dark-osm", "osm", "carto"]
+    : ["dark-osm", "osm", "carto"];
 
   return (
     <div
@@ -200,7 +229,7 @@ export default function CampusMap() {
         <span className="text-[10px] text-muted-foreground font-semibold px-2 flex items-center gap-1">
           <Layers className="h-3 w-3" /> Map Style:
         </span>
-        {(["dark", "osm", "positron"] as TileStyle[]).map((style) => (
+        {availableStyles.map((style) => (
           <button
             key={style}
             onClick={() => switchTileStyle(style)}
@@ -211,7 +240,13 @@ export default function CampusMap() {
             }`}
             title={TILE_LAYERS[style].name}
           >
-            {style === "dark" ? "Dark Matter" : style === "osm" ? "OSM Standard" : "Positron"}
+            {style === "dark-osm"
+              ? "OSM Dark"
+              : style === "osm"
+              ? "OSM Standard"
+              : style === "carto"
+              ? "CARTO Dark"
+              : "MapTiler"}
           </button>
         ))}
       </div>
