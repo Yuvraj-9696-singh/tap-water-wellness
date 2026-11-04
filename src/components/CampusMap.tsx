@@ -14,23 +14,23 @@ const GPS_COORDS: Record<string, [number, number]> = {
   "tap-5": [25.2592, 82.9865], // Visvesvaraya Hostel, IIT BHU
 };
 
-type TileStyle = "osm" | "hot" | "dark";
+type TileStyle = "dark" | "osm" | "positron";
 
 const TILE_LAYERS: Record<TileStyle, { url: string; attribution: string; name: string }> = {
+  dark: {
+    name: "CARTO Dark Matter (OSM)",
+    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+  },
   osm: {
     name: "OpenStreetMap Standard",
-    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
   },
-  hot: {
-    name: "OSM Humanitarian",
-    url: "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors, Tiles style by Humanitarian OpenStreetMap Team',
-  },
-  dark: {
-    name: "OSM Dark Mode",
-    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+  positron: {
+    name: "CARTO Positron (Clean Light)",
+    url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
   },
 };
 
@@ -40,7 +40,7 @@ export default function CampusMap() {
   const tileLayerRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [localSelectedTap, setLocalSelectedTap] = useState<EnhancedTapLocation | null>(null);
-  const [activeTileStyle, setActiveTileStyle] = useState<TileStyle>("osm");
+  const [activeTileStyle, setActiveTileStyle] = useState<TileStyle>("dark");
 
   // Initialize Leaflet Map
   useEffect(() => {
@@ -61,12 +61,12 @@ export default function CampusMap() {
 
       mapRef.current = map;
 
-      // Add OpenStreetMap default tile layer
-      const activeTile = TILE_LAYERS.osm;
+      // Add default dark basemap (CARTO Dark Matter, powered by OpenStreetMap data)
+      const activeTile = TILE_LAYERS.dark;
       tileLayerRef.current = L.tileLayer(activeTile.url, {
         attribution: activeTile.attribution,
         maxZoom: 19,
-        subdomains: ["a", "b", "c"],
+        subdomains: ["a", "b", "c", "d"],
       }).addTo(map);
 
       // Fit campus bounds with generous padding so all station pins are clearly visible
@@ -200,7 +200,7 @@ export default function CampusMap() {
         <span className="text-[10px] text-muted-foreground font-semibold px-2 flex items-center gap-1">
           <Layers className="h-3 w-3" /> Map Style:
         </span>
-        {(["osm", "hot", "dark"] as TileStyle[]).map((style) => (
+        {(["dark", "osm", "positron"] as TileStyle[]).map((style) => (
           <button
             key={style}
             onClick={() => switchTileStyle(style)}
@@ -211,7 +211,7 @@ export default function CampusMap() {
             }`}
             title={TILE_LAYERS[style].name}
           >
-            {style === "osm" ? "OSM Standard" : style === "hot" ? "Humanitarian" : "Dark"}
+            {style === "dark" ? "Dark Matter" : style === "osm" ? "OSM Standard" : "Positron"}
           </button>
         ))}
       </div>
