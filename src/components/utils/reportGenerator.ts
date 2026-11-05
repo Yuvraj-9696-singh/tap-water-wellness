@@ -45,8 +45,10 @@ export function generateWaterQualityReport(tap: TapLocation): void {
   doc.setTextColor(...gray);
   doc.text(`Station: ${tap.name}`, 15, 60);
   doc.text(`Location: ${tap.location}`, 15, 66);
-  doc.text(`Last Updated: ${new Date(tap.lastUpdated).toLocaleString()}`, 15, 72);
-  doc.text(`GPS: ${tap.latitude.toFixed(4)}°N, ${tap.longitude.toFixed(4)}°E`, 15, 78);
+  doc.text(`Last Updated: ${tap.lastUpdated || "Recent"}`, 15, 72);
+  const latStr = typeof tap.latitude === "number" ? tap.latitude.toFixed(4) : "25.2615";
+  const lngStr = typeof tap.longitude === "number" ? tap.longitude.toFixed(4) : "82.9878";
+  doc.text(`GPS: ${latStr}°N, ${lngStr}°E`, 15, 78);
 
   // Prediction box
   const fitColor: [number, number, number] = tap.prediction === "Fit for Drinking" ? [34, 197, 94] : [239, 68, 68];

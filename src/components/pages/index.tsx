@@ -383,7 +383,11 @@ const Index = () => {
         </footer>
       </div>
 
-      <TapDetailModal tap={selectedTap} onClose={() => setSelectedTap(null)} />
+      <AnimatePresence>
+        {selectedTap && (
+          <TapDetailModal tap={selectedTap} onClose={() => setSelectedTap(null)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
