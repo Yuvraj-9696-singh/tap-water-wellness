@@ -24,10 +24,10 @@ const AnimatedBackground = () => {
 
     // Complex interacting waves
     const waves = [
-      { yOffset: height * 0.65, length: 0.003, amplitude: 50, speed: 0.01, colorDark: "hsla(186, 100%, 42%, 0.02)", colorLight: "hsla(190, 80%, 60%, 0.05)" },
-      { yOffset: height * 0.75, length: 0.005, amplitude: 40, speed: 0.015, colorDark: "hsla(200, 100%, 50%, 0.03)", colorLight: "hsla(200, 80%, 70%, 0.06)" },
-      { yOffset: height * 0.85, length: 0.004, amplitude: 30, speed: 0.02, colorDark: "hsla(160, 80%, 45%, 0.04)", colorLight: "hsla(160, 70%, 65%, 0.06)" },
-      { yOffset: height * 0.95, length: 0.008, amplitude: 20, speed: 0.03, colorDark: "hsla(180, 70%, 40%, 0.05)", colorLight: "hsla(180, 70%, 60%, 0.07)" },
+      { yOffset: height * 0.65, length: 0.003, amplitude: 50, speed: 0.01, colorDark: "hsla(186, 100%, 42%, 0.02)", colorLight: "hsla(190, 80%, 60%, 0.05)", colorBlack: "hsla(0, 0%, 100%, 0.03)" },
+      { yOffset: height * 0.75, length: 0.005, amplitude: 40, speed: 0.015, colorDark: "hsla(200, 100%, 50%, 0.03)", colorLight: "hsla(200, 80%, 70%, 0.06)", colorBlack: "hsla(0, 0%, 100%, 0.04)" },
+      { yOffset: height * 0.85, length: 0.004, amplitude: 30, speed: 0.02, colorDark: "hsla(160, 80%, 45%, 0.04)", colorLight: "hsla(160, 70%, 65%, 0.06)", colorBlack: "hsla(0, 0%, 100%, 0.05)" },
+      { yOffset: height * 0.95, length: 0.008, amplitude: 20, speed: 0.03, colorDark: "hsla(180, 70%, 40%, 0.05)", colorLight: "hsla(180, 70%, 60%, 0.07)", colorBlack: "hsla(0, 0%, 100%, 0.06)" },
     ];
 
     // Light rays (caustics)
@@ -43,11 +43,15 @@ const AnimatedBackground = () => {
     let animationId: number;
 
     const animate = () => {
-      const isDark = document.documentElement.classList.contains("dark");
+      const isBlack = document.documentElement.classList.contains("black");
+      const isDark = document.documentElement.classList.contains("dark") || isBlack;
 
-      // Adaptive background gradient
+      // Adaptive background: pure #000000 in black mode, dark cyan in dark, light slate in light
       const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
-      if (isDark) {
+      if (isBlack) {
+        bgGradient.addColorStop(0, "#000000");
+        bgGradient.addColorStop(1, "#000000");
+      } else if (isDark) {
         bgGradient.addColorStop(0, "#050B14");
         bgGradient.addColorStop(1, "#0A1929");
       } else {
@@ -59,7 +63,10 @@ const AnimatedBackground = () => {
 
       // Ambient glow in center
       const glow = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, width * 1.2);
-      if (isDark) {
+      if (isBlack) {
+        glow.addColorStop(0, "hsla(0, 0%, 100%, 0.05)");
+        glow.addColorStop(0.5, "hsla(0, 0%, 100%, 0.02)");
+      } else if (isDark) {
         glow.addColorStop(0, "hsla(186, 100%, 42%, 0.1)");
         glow.addColorStop(0.5, "hsla(200, 100%, 50%, 0.05)");
       } else {
@@ -70,7 +77,7 @@ const AnimatedBackground = () => {
       ctx.fillStyle = glow;
       ctx.fillRect(0, 0, width, height);
 
-      // Draw light rays
+      // Draw light rays (pure white shafts in black mode)
       for (const ray of rays) {
         ctx.save();
         ctx.beginPath();
@@ -79,7 +86,10 @@ const AnimatedBackground = () => {
         
         const rayGradient = ctx.createLinearGradient(0, 0, 0, height);
         const currentOpacity = ray.opacity * (0.5 + Math.sin(time * ray.speed * 2) * 0.5);
-        if (isDark) {
+        if (isBlack) {
+          rayGradient.addColorStop(0, `hsla(0, 0%, 100%, ${currentOpacity * 0.9})`);
+          rayGradient.addColorStop(0.3, `hsla(0, 0%, 100%, ${currentOpacity * 0.45})`);
+        } else if (isDark) {
           rayGradient.addColorStop(0, `hsla(186, 100%, 80%, ${currentOpacity})`);
           rayGradient.addColorStop(0.3, `hsla(186, 100%, 60%, ${currentOpacity * 0.5})`);
         } else {
@@ -98,7 +108,7 @@ const AnimatedBackground = () => {
         if (ray.x > width + 100) ray.x = -100;
       }
 
-      // Draw waves
+      // Draw fluid waves
       for (let w = 0; w < waves.length; w++) {
         const wave = waves[w];
         ctx.beginPath();
@@ -112,16 +122,20 @@ const AnimatedBackground = () => {
         
         ctx.lineTo(width, height);
         ctx.closePath();
-        ctx.fillStyle = isDark ? wave.colorDark : wave.colorLight;
+        ctx.fillStyle = isBlack ? wave.colorBlack : isDark ? wave.colorDark : wave.colorLight;
         ctx.fill();
         
-        // Subtle crest highlight
+        // Crest highlight
         ctx.lineWidth = 1;
-        ctx.strokeStyle = isDark ? `hsla(186, 100%, 70%, 0.1)` : `hsla(190, 80%, 50%, 0.12)`;
+        ctx.strokeStyle = isBlack
+          ? `hsla(0, 0%, 100%, 0.25)`
+          : isDark
+          ? `hsla(186, 100%, 70%, 0.1)`
+          : `hsla(190, 80%, 50%, 0.12)`;
         ctx.stroke();
       }
 
-      // Draw bubbles
+      // Draw bubbles / starry particles (pure white bioluminescence in black mode)
       for (const p of particles) {
         ctx.beginPath();
         
@@ -129,14 +143,19 @@ const AnimatedBackground = () => {
           p.x - p.size * 0.3, p.y - p.size * 0.3, 0,
           p.x, p.y, p.size
         );
-        if (isDark) {
+        if (isBlack) {
+          bubbleGradient.addColorStop(0, `hsla(0, 0%, 100%, ${p.opacity * 0.95})`);
+          bubbleGradient.addColorStop(0.6, `hsla(0, 0%, 95%, ${p.opacity * 0.5})`);
+          bubbleGradient.addColorStop(1, "transparent");
+        } else if (isDark) {
           bubbleGradient.addColorStop(0, `hsla(210, 100%, 90%, ${p.opacity})`);
           bubbleGradient.addColorStop(0.8, `hsla(186, 100%, 60%, ${p.opacity * 0.5})`);
+          bubbleGradient.addColorStop(1, "transparent");
         } else {
           bubbleGradient.addColorStop(0, `hsla(190, 80%, 45%, ${p.opacity * 0.35})`);
           bubbleGradient.addColorStop(0.8, `hsla(186, 80%, 45%, ${p.opacity * 0.18})`);
+          bubbleGradient.addColorStop(1, "transparent");
         }
-        bubbleGradient.addColorStop(1, "transparent");
         
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fillStyle = bubbleGradient;
@@ -144,7 +163,11 @@ const AnimatedBackground = () => {
 
         ctx.beginPath();
         ctx.arc(p.x - p.size * 0.3, p.y - p.size * 0.3, p.size * 0.2, 0, Math.PI * 2);
-        ctx.fillStyle = isDark ? `hsla(0, 0%, 100%, ${p.opacity * 0.8})` : `hsla(0, 0%, 100%, ${p.opacity * 0.5})`;
+        ctx.fillStyle = isBlack
+          ? `hsla(0, 0%, 100%, ${p.opacity * 0.95})`
+          : isDark
+          ? `hsla(0, 0%, 100%, ${p.opacity * 0.8})`
+          : `hsla(0, 0%, 100%, ${p.opacity * 0.5})`;
         ctx.fill();
 
         // Update positions with sway

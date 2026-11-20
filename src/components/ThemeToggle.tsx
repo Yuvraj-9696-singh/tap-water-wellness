@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface ThemeToggleProps {
@@ -8,11 +8,44 @@ interface ThemeToggleProps {
   showLabel?: boolean;
 }
 
+export type ThemeMode = "dark" | "black" | "light";
+
+interface ThemeOption {
+  id: ThemeMode;
+  label: string;
+  icon: typeof Moon;
+  description: string;
+  activeColor: string;
+}
+
+const THEME_OPTIONS: ThemeOption[] = [
+  {
+    id: "dark",
+    label: "Ocean",
+    icon: Moon,
+    description: "Ocean Dark: Deep cyan & midnight waters",
+    activeColor: "text-cyan-400 bg-cyan-500/20 border-cyan-500/40 shadow-[0_0_12px_rgba(6,182,212,0.35)]",
+  },
+  {
+    id: "black",
+    label: "OLED",
+    icon: Sparkles,
+    description: "OLED Black: Pitch black & pure white animation",
+    activeColor: "text-white bg-white/20 border-white/50 shadow-[0_0_12px_rgba(255,255,255,0.45)]",
+  },
+  {
+    id: "light",
+    label: "Day",
+    icon: Sun,
+    description: "Day Light: Fresh clean aquatic palette",
+    activeColor: "text-amber-500 bg-amber-500/20 border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.35)]",
+  },
+];
+
 export default function ThemeToggle({ className = "", showLabel = false }: ThemeToggleProps) {
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // Avoid SSR / hydration mismatch
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -20,49 +53,43 @@ export default function ThemeToggle({ className = "", showLabel = false }: Theme
   if (!mounted) {
     return (
       <div
-        className={`h-9 w-9 rounded-full bg-secondary/80 border border-border/60 ${className}`}
+        className={`h-8 w-24 rounded-full bg-secondary/60 border border-border/50 ${className}`}
         aria-hidden="true"
       />
     );
   }
 
-  const isDark = resolvedTheme === "dark";
-
-  const toggleTheme = () => {
-    setTheme(isDark ? "light" : "dark");
-  };
+  const activeTheme: ThemeMode = (theme as ThemeMode) || "dark";
 
   return (
-    <button
-      onClick={toggleTheme}
-      type="button"
-      className={`relative inline-flex items-center justify-center p-2 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary border ${
-        isDark
-          ? "bg-secondary/80 border-border/60 text-amber-300 hover:text-amber-200 hover:bg-secondary hover:border-amber-400/40 shadow-sm"
-          : "bg-secondary border-border/80 text-sky-600 hover:text-sky-700 hover:bg-secondary/80 hover:border-sky-400/50 shadow-sm"
-      } ${className}`}
-      aria-label={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
-      title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+    <div
+      className={`inline-flex items-center p-0.5 rounded-full bg-secondary/80 border border-border/70 backdrop-blur-md shadow-sm ${className}`}
+      role="group"
+      aria-label="Theme mode switcher"
     >
-      <motion.div
-        key={isDark ? "dark" : "light"}
-        initial={{ rotate: -90, scale: 0.6, opacity: 0 }}
-        animate={{ rotate: 0, scale: 1, opacity: 1 }}
-        exit={{ rotate: 90, scale: 0.6, opacity: 0 }}
-        transition={{ duration: 0.25, ease: "easeInOut" }}
-        className="flex items-center gap-2"
-      >
-        {isDark ? (
-          <Sun className="h-4 w-4 text-amber-300 drop-shadow-[0_0_6px_rgba(252,211,77,0.5)]" />
-        ) : (
-          <Moon className="h-4 w-4 text-sky-600 drop-shadow-[0_0_6px_rgba(2,132,199,0.3)]" />
-        )}
-        {showLabel && (
-          <span className="text-xs font-semibold text-foreground pr-1">
-            {isDark ? "Light Mode" : "Dark Mode"}
-          </span>
-        )}
-      </motion.div>
-    </button>
+      {THEME_OPTIONS.map((opt) => {
+        const Icon = opt.icon;
+        const isActive = activeTheme === opt.id;
+
+        return (
+          <button
+            key={opt.id}
+            onClick={() => setTheme(opt.id)}
+            type="button"
+            className={`relative flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary border border-transparent ${
+              isActive
+                ? opt.activeColor
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+            }`}
+            aria-pressed={isActive}
+            title={opt.description}
+            aria-label={opt.description}
+          >
+            <Icon className="h-3.5 w-3.5 shrink-0" />
+            {showLabel && <span>{opt.label}</span>}
+          </button>
+        );
+      })}
+    </div>
   );
 }
