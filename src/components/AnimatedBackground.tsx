@@ -24,10 +24,10 @@ const AnimatedBackground = () => {
 
     // Complex interacting waves
     const waves = [
-      { yOffset: height * 0.65, length: 0.003, amplitude: 50, speed: 0.01, color: "hsla(186, 100%, 42%, 0.02)" },
-      { yOffset: height * 0.75, length: 0.005, amplitude: 40, speed: 0.015, color: "hsla(200, 100%, 50%, 0.03)" },
-      { yOffset: height * 0.85, length: 0.004, amplitude: 30, speed: 0.02, color: "hsla(160, 80%, 45%, 0.04)" },
-      { yOffset: height * 0.95, length: 0.008, amplitude: 20, speed: 0.03, color: "hsla(180, 70%, 40%, 0.05)" },
+      { yOffset: height * 0.65, length: 0.003, amplitude: 50, speed: 0.01, colorDark: "hsla(186, 100%, 42%, 0.02)", colorLight: "hsla(190, 80%, 60%, 0.05)" },
+      { yOffset: height * 0.75, length: 0.005, amplitude: 40, speed: 0.015, colorDark: "hsla(200, 100%, 50%, 0.03)", colorLight: "hsla(200, 80%, 70%, 0.06)" },
+      { yOffset: height * 0.85, length: 0.004, amplitude: 30, speed: 0.02, colorDark: "hsla(160, 80%, 45%, 0.04)", colorLight: "hsla(160, 70%, 65%, 0.06)" },
+      { yOffset: height * 0.95, length: 0.008, amplitude: 20, speed: 0.03, colorDark: "hsla(180, 70%, 40%, 0.05)", colorLight: "hsla(180, 70%, 60%, 0.07)" },
     ];
 
     // Light rays (caustics)
@@ -43,17 +43,29 @@ const AnimatedBackground = () => {
     let animationId: number;
 
     const animate = () => {
-      // Clear with dark subtle gradient
+      const isDark = document.documentElement.classList.contains("dark");
+
+      // Adaptive background gradient
       const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
-      bgGradient.addColorStop(0, "#050B14");
-      bgGradient.addColorStop(1, "#0A1929");
+      if (isDark) {
+        bgGradient.addColorStop(0, "#050B14");
+        bgGradient.addColorStop(1, "#0A1929");
+      } else {
+        bgGradient.addColorStop(0, "#F8FAFC");
+        bgGradient.addColorStop(1, "#EBF8FF");
+      }
       ctx.fillStyle = bgGradient;
       ctx.fillRect(0, 0, width, height);
 
       // Ambient glow in center
       const glow = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, width * 1.2);
-      glow.addColorStop(0, "hsla(186, 100%, 42%, 0.1)");
-      glow.addColorStop(0.5, "hsla(200, 100%, 50%, 0.05)");
+      if (isDark) {
+        glow.addColorStop(0, "hsla(186, 100%, 42%, 0.1)");
+        glow.addColorStop(0.5, "hsla(200, 100%, 50%, 0.05)");
+      } else {
+        glow.addColorStop(0, "hsla(186, 90%, 65%, 0.12)");
+        glow.addColorStop(0.5, "hsla(200, 90%, 75%, 0.06)");
+      }
       glow.addColorStop(1, "transparent");
       ctx.fillStyle = glow;
       ctx.fillRect(0, 0, width, height);
@@ -67,8 +79,13 @@ const AnimatedBackground = () => {
         
         const rayGradient = ctx.createLinearGradient(0, 0, 0, height);
         const currentOpacity = ray.opacity * (0.5 + Math.sin(time * ray.speed * 2) * 0.5);
-        rayGradient.addColorStop(0, `hsla(186, 100%, 80%, ${currentOpacity})`);
-        rayGradient.addColorStop(0.3, `hsla(186, 100%, 60%, ${currentOpacity * 0.5})`);
+        if (isDark) {
+          rayGradient.addColorStop(0, `hsla(186, 100%, 80%, ${currentOpacity})`);
+          rayGradient.addColorStop(0.3, `hsla(186, 100%, 60%, ${currentOpacity * 0.5})`);
+        } else {
+          rayGradient.addColorStop(0, `hsla(190, 80%, 45%, ${currentOpacity * 0.35})`);
+          rayGradient.addColorStop(0.3, `hsla(190, 80%, 45%, ${currentOpacity * 0.15})`);
+        }
         rayGradient.addColorStop(1, "transparent");
         
         ctx.fillStyle = rayGradient;
@@ -88,7 +105,6 @@ const AnimatedBackground = () => {
         ctx.moveTo(0, height);
         
         for (let x = 0; x <= width; x += 30) {
-          // Add secondary sine wave for organic feel
           const secondaryWave = Math.sin(x * wave.length * 2 - time * wave.speed * 1.5) * (wave.amplitude * 0.3);
           const y = wave.yOffset + Math.sin(x * wave.length + time * wave.speed + w) * wave.amplitude + secondaryWave;
           ctx.lineTo(x, y);
@@ -96,12 +112,12 @@ const AnimatedBackground = () => {
         
         ctx.lineTo(width, height);
         ctx.closePath();
-        ctx.fillStyle = wave.color;
+        ctx.fillStyle = isDark ? wave.colorDark : wave.colorLight;
         ctx.fill();
         
-        // Add subtle crest highlight
+        // Subtle crest highlight
         ctx.lineWidth = 1;
-        ctx.strokeStyle = `hsla(186, 100%, 70%, 0.1)`;
+        ctx.strokeStyle = isDark ? `hsla(186, 100%, 70%, 0.1)` : `hsla(190, 80%, 50%, 0.12)`;
         ctx.stroke();
       }
 
@@ -109,23 +125,26 @@ const AnimatedBackground = () => {
       for (const p of particles) {
         ctx.beginPath();
         
-        // Bubble gradient for 3D effect
         const bubbleGradient = ctx.createRadialGradient(
           p.x - p.size * 0.3, p.y - p.size * 0.3, 0,
           p.x, p.y, p.size
         );
-        bubbleGradient.addColorStop(0, `hsla(210, 100%, 90%, ${p.opacity})`);
-        bubbleGradient.addColorStop(0.8, `hsla(186, 100%, 60%, ${p.opacity * 0.5})`);
+        if (isDark) {
+          bubbleGradient.addColorStop(0, `hsla(210, 100%, 90%, ${p.opacity})`);
+          bubbleGradient.addColorStop(0.8, `hsla(186, 100%, 60%, ${p.opacity * 0.5})`);
+        } else {
+          bubbleGradient.addColorStop(0, `hsla(190, 80%, 45%, ${p.opacity * 0.35})`);
+          bubbleGradient.addColorStop(0.8, `hsla(186, 80%, 45%, ${p.opacity * 0.18})`);
+        }
         bubbleGradient.addColorStop(1, "transparent");
         
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fillStyle = bubbleGradient;
         ctx.fill();
 
-        // Add subtle white highlight reflection
         ctx.beginPath();
         ctx.arc(p.x - p.size * 0.3, p.y - p.size * 0.3, p.size * 0.2, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(0, 0%, 100%, ${p.opacity * 0.8})`;
+        ctx.fillStyle = isDark ? `hsla(0, 0%, 100%, ${p.opacity * 0.8})` : `hsla(0, 0%, 100%, ${p.opacity * 0.5})`;
         ctx.fill();
 
         // Update positions with sway

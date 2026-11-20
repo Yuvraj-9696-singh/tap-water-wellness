@@ -1,3 +1,4 @@
+import ThemeToggle from "@/components/ThemeToggle";
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -162,6 +163,7 @@ const Index = () => {
                 )}
               </div>
 
+              <ThemeToggle />
               <AlertsPanel />
             </div>
           </div>
@@ -190,6 +192,11 @@ const Index = () => {
                     {link.label}
                   </Link>
                 ))}
+              
+                <div className="flex items-center justify-between px-4 py-2 border-t border-border/40 mt-1">
+                  <span className="text-xs text-muted-foreground font-medium">Appearance</span>
+                  <ThemeToggle />
+                </div>
               </motion.nav>
             )}
           </AnimatePresence>

@@ -1,3 +1,4 @@
+import ThemeToggle from "@/components/ThemeToggle";
 import { motion } from "framer-motion";
 import { Droplets, BookOpen, Brain, Wifi, Shield, Github, FlaskConical } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
@@ -75,6 +76,7 @@ const AboutPage = () => {
                 </Link>
               ))}
             </nav>
+            <ThemeToggle />
           </div>
         </header>
 

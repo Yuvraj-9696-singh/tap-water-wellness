@@ -1,3 +1,4 @@
+import ThemeToggle from "@/components/ThemeToggle";
 import { motion } from "framer-motion";
 import { Droplets } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
@@ -42,9 +43,12 @@ const PredictLayout = () => {
                 </Link>
               ))}
             </nav>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-success/20 text-success text-xs font-medium hidden sm:flex">
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-success/20 text-success text-xs font-medium hidden sm:flex">
               <span className="h-2 w-2 rounded-full bg-success animate-pulse-glow" />
               Live Monitoring
+              </div>
             </div>
           </div>
         </header>

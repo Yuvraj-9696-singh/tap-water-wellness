@@ -1,3 +1,4 @@
+import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, XCircle, Droplets, Wifi, WifiOff, Clock, Layers, MapPin } from "lucide-react";
@@ -56,6 +57,8 @@ const TILE_LAYERS: Record<TileStyle, TileConfig> = {
 
 export default function CampusMap() {
   const { taps, setSelectedTap: setGlobalSelectedTap } = useWaterData();
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme !== "light";
   const mapRef = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -182,6 +185,14 @@ export default function CampusMap() {
     };
   }, [taps]);
 
+  // Auto sync tile style with theme
+  useEffect(() => {
+    const desiredStyle: TileStyle = isDark ? (MAPTILER_KEY ? "maptiler" : "dark-osm") : "osm";
+    switchTileStyle(desiredStyle);
+  }, [isDark]);
+
+
+
   // Handle Tile Style Change
   const switchTileStyle = (style: TileStyle) => {
     setActiveTileStyle(style);
@@ -302,7 +313,7 @@ export default function CampusMap() {
               {/* Header */}
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <h3 className="font-heading font-bold text-white text-base leading-tight">
+                  <h3 className="font-heading font-bold text-foreground text-base leading-tight">
                     {activeTap.name}
                   </h3>
                   <p className="text-xs font-medium flex items-center gap-1 mt-0.5 text-muted-foreground">
@@ -319,7 +330,7 @@ export default function CampusMap() {
                 </div>
                 <button
                   onClick={() => setLocalSelectedTap(null)}
-                  className="p-1 rounded-full text-white/40 hover:text-white/80 hover:bg-white/10 transition-colors"
+                  className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                   aria-label="Close station popup"
                 >
                   <XCircle className="h-5 w-5" />
@@ -331,28 +342,28 @@ export default function CampusMap() {
                 <div
                   className="rounded-xl p-3 text-center"
                   style={{
-                    background: "rgba(255,255,255,0.05)",
-                    border: "1px solid rgba(255,255,255,0.08)",
+                    background: "hsl(var(--muted) / 0.5)",
+                    border: "1px solid hsl(var(--border))",
                   }}
                 >
-                  <p className="text-[10px] text-white/60 mb-0.5">WQI Score</p>
+                  <p className="text-[10px] text-muted-foreground mb-0.5">WQI Score</p>
                   <p
                     className="text-2xl font-black font-heading leading-none"
                     style={{ color: STATUS_THEME[activeTap.evaluation.baseStatus].hex }}
                   >
                     {activeTap.wqi}
                   </p>
-                  <p className="text-[10px] text-white/70 mt-1">{activeTap.evaluation.wqiBand}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">{activeTap.evaluation.wqiBand}</p>
                 </div>
 
                 <div
                   className="rounded-xl p-3 text-center flex flex-col justify-center"
                   style={{
-                    background: "rgba(255,255,255,0.05)",
-                    border: "1px solid rgba(255,255,255,0.08)",
+                    background: "hsl(var(--muted) / 0.5)",
+                    border: "1px solid hsl(var(--border))",
                   }}
                 >
-                  <p className="text-[10px] text-white/60 mb-1.5">Status</p>
+                  <p className="text-[10px] text-muted-foreground mb-1.5">Status</p>
                   <span
                     className="px-2 py-1 rounded-lg text-xs font-bold capitalize inline-flex items-center gap-1 justify-center"
                     style={{
@@ -387,8 +398,8 @@ export default function CampusMap() {
                     className="flex justify-between items-center text-xs px-2.5 py-1.5 rounded-lg"
                     style={{ background: "rgba(255,255,255,0.04)" }}
                   >
-                    <span className="text-white/60">{p.name}</span>
-                    <span className="font-bold text-white/90">
+                    <span className="text-muted-foreground">{p.name}</span>
+                    <span className="font-bold text-foreground">
                       {p.value} <span className="font-normal opacity-50">{p.unit}</span>
                     </span>
                   </div>

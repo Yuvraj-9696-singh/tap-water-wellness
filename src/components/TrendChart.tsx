@@ -479,24 +479,24 @@ const TrendChart = () => {
               </linearGradient>
             </defs>
 
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(210 30% 18%)" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
 
             <XAxis
               dataKey="time"
               interval={tickInterval}
-              tick={{ fill: "hsl(200 20% 55%)", fontSize: 11 }}
+              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
               axisLine={false}
               tickLine={false}
               label={{
                 value: xLabel,
                 position: "insideBottomRight",
                 offset: -4,
-                fill: "hsl(200 20% 55%)",
+                fill: "hsl(var(--muted-foreground))",
                 fontSize: 10,
               }}
             />
             <YAxis
-              tick={{ fill: "hsl(200 20% 55%)", fontSize: 11 }}
+              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
               axisLine={false}
               tickLine={false}
               domain={[0, 100]}
@@ -505,7 +505,7 @@ const TrendChart = () => {
                 angle: -90,
                 position: "insideLeft",
                 offset: 18,
-                fill: "hsl(200 20% 55%)",
+                fill: "hsl(var(--muted-foreground))",
                 fontSize: 10,
               }}
             />
@@ -586,16 +586,16 @@ const TrendChart = () => {
           </div>
           <ResponsiveContainer width="100%" height="80%">
             <ComposedChart data={live24hData} margin={{ top: 4, right: 65, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(210 30% 18%)" vertical={false} />
-              <XAxis dataKey="time" interval={tickInterval} tick={{ fill: "hsl(200 20% 55%)", fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis domain={[5.5, 9.0]} tick={{ fill: "hsl(200 20% 55%)", fontSize: 10 }} axisLine={false} tickLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis dataKey="time" interval={tickInterval} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis domain={[5.5, 9.0]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} axisLine={false} tickLine={false} />
               <Tooltip
                 contentStyle={{
-                  background: "hsl(210 40% 15%)",
-                  border: "1px solid hsl(210 30% 30%)",
+                  background: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
                   borderRadius: 8,
                   fontSize: 11,
-                  color: "#fff",
+                  color: "hsl(var(--card-foreground))",
                 }}
                 formatter={(v: any) => [`pH: ${v}`, ""]}
                 labelFormatter={(l) => `${l} (5m)`}
