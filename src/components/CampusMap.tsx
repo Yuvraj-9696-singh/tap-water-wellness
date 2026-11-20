@@ -58,7 +58,6 @@ const TILE_LAYERS: Record<TileStyle, TileConfig> = {
 export default function CampusMap() {
   const { taps, setSelectedTap: setGlobalSelectedTap } = useWaterData();
   const { resolvedTheme } = useTheme();
-  const isBlack = resolvedTheme === "black";
   const isDark = resolvedTheme !== "light";
   const mapRef = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);

@@ -12,7 +12,7 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <ErrorBoundary fallbackTitle="AquaWatch Dashboard Error">
-    <ThemeProvider attribute="class" defaultTheme="dark" themes={["dark", "black", "light"]} enableSystem={false}>
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
       <QueryClientProvider client={queryClient}>
         <WaterDataProvider>
           <BrowserRouter>
